@@ -34,14 +34,14 @@ def create_and_evaluate_model(args):
     
     start = time.time()
     score = 0
+
     for cv_iter in range(n_splits):
-        
         dt_test_prefixes = dt_prefixes[cv_iter]
         dt_train_prefixes = pd.DataFrame()
         for cv_train_iter in range(n_splits): 
             if cv_train_iter != cv_iter:
                 dt_train_prefixes = pd.concat([dt_train_prefixes, dt_prefixes[cv_train_iter]], axis=0)
-        
+
         # Bucketing prefixes based on control flow
         bucketer_args = {'encoding_method':bucket_encoding, 
                          'case_id_col':dataset_manager.case_id_col, 
@@ -50,10 +50,13 @@ def create_and_evaluate_model(args):
                          'random_state':random_state}
         if bucket_method == "cluster":
             bucketer_args["n_clusters"] = args["n_clusters"]
+            #bucketer_args["n_clusters"] = 3
+
         bucketer = BucketFactory.get_bucketer(bucket_method, **bucketer_args)
         bucket_assignments_train = bucketer.fit_predict(dt_train_prefixes)
+
         bucket_assignments_test = bucketer.predict(dt_test_prefixes)
-        
+
         preds_all = []
         test_y_all = []
         if "prefix" in method_name:
@@ -63,6 +66,7 @@ def create_and_evaluate_model(args):
             relevant_test_cases_bucket = dataset_manager.get_indexes(dt_test_prefixes)[bucket_assignments_test == bucket]
             dt_test_bucket = dataset_manager.get_relevant_data_by_indexes(dt_test_prefixes, relevant_test_cases_bucket)
             test_y = dataset_manager.get_label_numeric(dt_test_bucket)
+
             if len(relevant_train_cases_bucket) == 0:
                 preds = [class_ratios[cv_iter]] * len(relevant_test_cases_bucket)
             else:
@@ -102,6 +106,7 @@ def create_and_evaluate_model(args):
                         pipeline = Pipeline([('encoder', feature_combiner), ('scaler', StandardScaler()), ('cls', cls)])
                     else:
                         pipeline = Pipeline([('encoder', feature_combiner), ('cls', cls)])
+
                     pipeline.fit(dt_train_bucket, train_y)
 
                     if cls_method == "svm":
@@ -162,10 +167,11 @@ encoding_dict = {
 }
 
 datasets = [dataset_ref] if dataset_ref not in dataset_ref_to_datasets else dataset_ref_to_datasets[dataset_ref]
+
 methods = encoding_dict[cls_encoding]
     
 train_ratio = 0.8
-n_splits = 3
+n_splits = 2
 random_state = 22
 
 # create results directory
@@ -173,9 +179,8 @@ if not os.path.exists(os.path.join(params_dir)):
     os.makedirs(os.path.join(params_dir))
     
 for dataset_name in datasets:
-    
-    # read the data
     dataset_manager = DatasetManager(dataset_name)
+
     data = dataset_manager.read_dataset()
     cls_encoder_args = {'case_id_col': dataset_manager.case_id_col, 
                         'static_cat_cols': dataset_manager.static_cat_cols,
@@ -202,9 +207,10 @@ for dataset_name in datasets:
     for train_chunk, test_chunk in dataset_manager.get_stratified_split_generator(train, n_splits=n_splits):
         class_ratios.append(dataset_manager.get_class_ratio(train_chunk))
         # generate data where each prefix is a separate instance
-        dt_prefixes.append(dataset_manager.generate_prefix_data(test_chunk, min_prefix_length, max_prefix_length))
+        dt_prefixes.append(dataset_manager.generate_ngram_data(test_chunk))
+        # dt_prefixes.append(dataset_manager.generate_prefix_data(test_chunk, min_prefix_length, max_prefix_length))
     del train
-        
+
     # set up search space
     if cls_method == "rf":
         space = {'max_features': hp.uniform('max_features', 0, 1)}

@@ -100,7 +100,9 @@ for dataset_name in datasets:
         outfile = os.path.join(results_dir, "performance_results_%s_%s_%s.csv" % (cls_method, dataset_name, method_name))
         
     start_test_prefix_generation = time.time()
-    dt_test_prefixes = dataset_manager.generate_prefix_data(test, min_prefix_length, max_prefix_length)
+    #dt_test_prefixes = dataset_manager.generate_prefix_data(test, min_prefix_length, max_prefix_length)
+    dt_test_prefixes = dataset_manager.generate_ngram_data(data=test)
+
     test_prefix_generation_time = time.time() - start_test_prefix_generation
             
     offline_total_times = []
@@ -109,7 +111,9 @@ for dataset_name in datasets:
     for ii in range(n_iter):
         # create prefix logs
         start_train_prefix_generation = time.time()
-        dt_train_prefixes = dataset_manager.generate_prefix_data(train, min_prefix_length, max_prefix_length, gap)
+        #dt_train_prefixes = dataset_manager.generate_prefix_data(train, min_prefix_length, max_prefix_length, gap)
+        dt_train_prefixes = dataset_manager.generate_ngram_data(data=train, gap=gap)
+
         train_prefix_generation_time = time.time() - start_train_prefix_generation
         train_prefix_generation_times.append(train_prefix_generation_time)
             
@@ -143,7 +147,8 @@ for dataset_name in datasets:
             relevant_test_cases_bucket = dataset_manager.get_indexes(dt_test_prefixes)[bucket_assignments_test == bucket]
             dt_test_bucket = dataset_manager.get_relevant_data_by_indexes(dt_test_prefixes, relevant_test_cases_bucket)
             
-            nr_events_all.extend(list(dataset_manager.get_prefix_lengths(dt_test_bucket)))
+            #nr_events_all.extend(list(dataset_manager.get_prefix_lengths(dt_test_bucket)))
+            nr_events_all.extend(list(dataset_manager.get_ngram_shifts(dt_test_bucket)))
             if len(relevant_train_cases_bucket) == 0:
                 preds = [dataset_manager.get_class_ratio(train)] * len(relevant_test_cases_bucket)
                 current_online_event_times.extend([0] * len(preds))

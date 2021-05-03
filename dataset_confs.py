@@ -214,4 +214,20 @@ for formula in range(1,5):
     static_cat_cols[dataset] = ["Diagnosis", "Treatment code", "Diagnosis code", "Specialism code", "Diagnosis Treatment Combination ID"]
     dynamic_num_cols[dataset] = ["Number of executions", "hour", "weekday", "month", "timesincemidnight", "timesincelastevent", "timesincecasestart", "event_nr", "open_cases"]
     static_num_cols[dataset] = ["Age"]
-    
+
+#### NEW TURNAROUND LABELED Config ####
+dataset = 'turnaround_labeled'
+filename[dataset] = os.path.join(logs_dir, "%s.csv" % dataset)
+
+case_id_col[dataset] = "caseid"
+activity_col[dataset] = "activity"
+timestamp_col[dataset] = "start_timestamp"
+label_col[dataset] = "label"
+pos_label[dataset] = '1'
+neg_label[dataset] = '0'
+
+# features for classifier
+dynamic_cat_cols[dataset] = ['activity'] # i.e. event attributes
+static_cat_cols[dataset] = [] # i.e. case attributes that are known from the start
+dynamic_num_cols[dataset] = ['WIP', 'event_nr']
+static_num_cols[dataset] = ['SLA MIN']

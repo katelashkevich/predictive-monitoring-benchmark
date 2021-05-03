@@ -4,6 +4,7 @@ import dataset_confs
 
 import pandas as pd
 import numpy as np
+from nltk import ngrams
 
 from sklearn.model_selection import StratifiedKFold
 
@@ -25,7 +26,6 @@ class DatasetManager:
         self.static_num_cols = dataset_confs.static_num_cols[self.dataset_name]
         
         self.sorting_cols = [self.timestamp_col, self.activity_col]
-        
     
     def read_dataset(self):
         # read dataset
@@ -116,9 +116,50 @@ class DatasetManager:
         
         return dt_prefixes
 
+    # (NEW) N-Grams function
+    def generate_ngram_data(self, data, n_size = 4, gap = 1):
+        orig_case_id_col = 'orig_case_id'
+        event_nr_col = 'event_nr'
+        shift_col = 'ngram_shift'
 
+        # Create empty result dataframe with same columns as input
+        result = pd.DataFrame().reindex(columns=data.columns)
+        result[event_nr_col] = None
+        result[orig_case_id_col] = None
+        result[shift_col] = None
+
+        # Iterate over all cases
+        for case_id in data[self.case_id_col].unique():
+            # Get all events for the current case_id sorted by timestamp
+            case_data = data[data[self.case_id_col] == case_id].sort_values([self.timestamp_col], ascending=True, kind='mergesort')
+            case_data.insert(len(case_data.columns), event_nr_col, range(1, len(case_data) + 1))
+
+            # Getting the original row indexes to use in N-gram copying
+            event_indexes = case_data.index.values
+            # If the provided n_size is bigger than the case lengtn, set N as case length
+            N = min(n_size, len(event_indexes))
+
+            # Get all N-grams for events in the current case
+            ngrams_indexes = list(ngrams(event_indexes, N))
+
+            for i in range(0, len(ngrams_indexes), gap):
+                # Get the subset relevant to current N-gram in the original dataset
+                ngram_subset_df = case_data.loc[list(ngrams_indexes[i])].copy()
+                # Assign the original case id (just in case)
+                ngram_subset_df[orig_case_id_col] = ngram_subset_df[self.case_id_col]
+                ngram_subset_df[shift_col] = i
+                # Modify case ID column to remain unique (concatenating N-gram number to the end)
+                ngram_subset_df[self.case_id_col] = ngram_subset_df[self.case_id_col].apply(lambda x: "%s_%s"%(x, i))
+                # Concatenate the N-gram subset to the result
+                result = pd.concat([result, ngram_subset_df], axis=0)
+
+        return result
+
+    # def get_pos_case_length_quantile(self, data, quantile=0.90):
+    #     return int(np.ceil(data[data[self.label_col]==self.pos_label].groupby(self.case_id_col).size().quantile(quantile)))
+    
     def get_pos_case_length_quantile(self, data, quantile=0.90):
-        return int(np.ceil(data[data[self.label_col]==self.pos_label].groupby(self.case_id_col).size().quantile(quantile)))
+        return int(np.ceil(data.groupby(self.case_id_col).size().quantile(quantile)))
 
     def get_indexes(self, data):
         return data.groupby(self.case_id_col).first().index
@@ -131,6 +172,9 @@ class DatasetManager:
     
     def get_prefix_lengths(self, data):
         return data.groupby(self.case_id_col).last()["prefix_nr"]
+
+    def get_ngram_shifts(self, data):
+        return data.groupby(self.case_id_col).last()["ngram_shift"]
     
     def get_case_ids(self, data, nr_events=1):
         case_ids = pd.Series(data.groupby(self.case_id_col).first().index)

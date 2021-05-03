@@ -1,45 +1,18 @@
-# Benchmark for outcome-oriented predictive process monitoring
-Supplementary material for the article ["Outcome-Oriented Predictive Process Monitoring: Review and Benchmark"](https://arxiv.org/abs/1707.06766) by Irene Teinemaa, Marlon Dumas, Marcello La Rosa, and Fabrizio Maria Maggi.
+# Business Process Mining. Homework 4: Predictive Process Monitoring
+Solution to the home task 4 of the Business Process Mining course (University of Tartu)
 
-This repository provides implementations of different techniques for outcome-oriented predictive business process monitoring. The aim of these techniques is to predict a (pre-defined) binary case outcome of a running (partial) trace. 
+Original codebase [by Irene Teinemaa](https://github.com/irhete/predictive-monitoring-benchmark)
 
-The benchmark includes implementations of four sequence encodings (for further description, refer to the paper):
+The original codebase was updated to support a new dataset [turnaround_anon_sla.csv](http://kodu.ut.ee/~chavez85/pm_course/data/turnaround_anon_sla.csv), and use **n-grams** instead of **prefixes** in the original approach.
 
-* Static encoding
-* Last state encoding
-* Aggregation encoding
-* Index-based encoding
-
-Moreover, the repository contains implementations of four bucketing methods (see the paper for more details):
-
-* No bucketing
-* KNN
-* State-based
-* Clustering
-* Prefix length based
-
-The benchmark experiments have been performed using four classifiers:
-
-* Random forest
-* Gradient boosted trees (XGBoost)
-* Logistic regression
-* SVM
-
-Together with the code, we make available 22 datasets that were used in the evaluation section in the paper (2 datasets used in the paper are private). These datasets correspond to different prediction tasks, formulated on 8 publicly available event logs (namely, the [BPIC 2011](https://data.4tu.nl/repository/uuid:d9769f3d-0ab0-4fb8-803b-0d1120ffcf54), [BPIC 2012](https://data.4tu.nl/repository/uuid:3926db30-f712-4394-aebc-75976070e91f), [BPIC 2015](http://data.4tu.nl/repository/uuid:31a308ef-c844-48da-948c-305d167a0ec1), [BPIC 2017](http://data.4tu.nl/repository/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b), [Sepsis Cases](https://data.4tu.nl/repository/uuid:915d2bfb-7e84-49ad-a286-dc35f063a460), [Hospital Billing](https://data.4tu.nl/repository/uuid:76c46b83-c930-4798-a1c9-4be94dfeb741), [Road Traffic Fine Management](https://data.4tu.nl/repository/uuid:270fd440-1057-4fb9-89a9-b699b47990f5), [Production log](https://data.4tu.nl/repository/uuid:68726926-5ac5-4fab-b873-ee76ea412399) event logs). These (labeled and preprocessed) benchmark datasets can be found at https://drive.google.com/open?id=154hcH-HGThlcZJW5zBvCJMZvjOQDsnPR.
-
-If you use code from this repository, please cite the following paper:
-
-```
-@article{teinemaa2019outcome,
-  author    = {Irene Teinemaa and
-               Marlon Dumas and
-               Marcello La Rosa and
-               Fabrizio Maria Maggi},
-  title     = {Outcome-Oriented Predictive Process Monitoring: Review and Benchmark},
-  journal   = {{TKDD}},
-  volume    = {13},
-  number    = {2},
-  pages     = {17:1--17:57},
-  year      = {2019}
-}
-```
+### Repository structure
+- `HW4.ipynb` - **main Jupyter Notebook file containing homework task solution and explanations of original codebase changes**
+- `input` folder - contains raw turnaround_anon_sla.csv dataset
+- `labeled_logs_csv_processed` folder - contains labeled dataset with WIP column (Tasks 1 and 2). Used as an input file for `optimize_params.py`
+- `bucketers` and `transformers` folders - copied from the original codebase without changes
+- `BucketFactory.py` and `EncoderFactory.py` - used without changes (were moved from `experiments` folder in the original repo to the repo root)
+- `DatasetManager.py` - was moved from `experiments` folder in the original repo to the repo root. Includes new `generate_ngram_data()` and `get_ngram_shifts()` methods to allow using n-grams instead of log prefixes
+- `dataset_confs.py` - was moved from `experiments` folder in the original repo to the repo root. Includes new configuration for `turnaround_labeled` dataset
+- `optimize_params.py` - was moved from `experiments` folder in the original repo to the repo root. Uses `dataset_manager.generate_ngram_data()` method istead of `dataset_manager.generate_prefix_data()`
+- `experiments.py` - was moved from `experiments` folder in the original repo to the repo root. Uses `dataset_manager.get_ngram_shifts()` method istead of `dataset_manager.get_prefix_lengths()`, and `dataset_manager.generate_ngram_data()` method istead of `dataset_manager.generate_prefix_data()`
+- `output` folder - contains outcomes of executinf `optimize_params.py` and `experiments.py`
